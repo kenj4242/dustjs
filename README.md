@@ -1,32 +1,34 @@
-# Dust.js [![Build Status](https://secure.travis-ci.org/linkedin/dustjs.png)](http://travis-ci.org/linkedin/dustjs) [![Sauce Test Status](https://saucelabs.com/buildstatus/dustjs)](https://saucelabs.com/u/dustjs)
+This fork is substantially changed from the original linkedin dustjs project from which it was forked. If you're looking for "vanilla" dustjs, you should go to that project [https://github.com/linkedin/dustjs].
 
-Asynchronous Javascript templating for the browser and server. This fork is maintained by [LinkedIn](http://linkedin.github.io/).
+## Changes from original DustJS
 
-## Install
+Dust tags are delimited by DOUBLE curly-braces, instead of single. Example {{key}}
 
-### NPM
+Spaces are allowed in dust tags, so {{ key}} {{ key }} {{key }} are all valid.
 
-**Important**: We recommend that you lock your version of Dust to a specific minor version, instead of a major version. By default, NPM will add `"dustjs-linkedin": "^2.x.y"` to your package.json, which will install new minor versions automatically.
+Spaces are allowed around filters, so {{ key | filter }} works.
 
-    npm install --save --production dustjs-linkedin
-    # If you want the dustc compiler available globally
-    npm install --global --production dustjs-linkedin
+Filters can take inline arguments, using a ":" as the argument separator, similar to AngularJS filters. Example: {{ key | filter : arg1 : arg2 }}. Filter arguments are passed to the filter function as an array, so the filter signature becomes: function(value, context, args[]).
 
-If you want to add the [Dust helpers](https://github.com/linkedin/dustjs-helpers) or [secure filters](https://github.com/linkedin/dustjs-filters-secure):
+Filter arguments may be literals, or keys that will be resolved from the context.
 
-    npm install --save --production dustjs-helpers
-    npm install --save --production dustjs-filters-secure
+The dust renderer is now instanced, multiple dust engine instances can be created with different filters, helpers, onLoad and cache. The global dust object no longer contains any of the load, compile, or render methods. These methods are all moved to dust engine instances. 
 
-### Bower
+Example:
 
-    bower install --save dustjs-linkedin
+    var engine = dust.engine();
+    
+    engine.filters.myfilter = function() {};
+    engine.helpers.myhelper = function() {};
+    engine.onLoad = function() {};
+    
+    var compiled = engine.compile("<h1>{{ title }}</h1>");
+    var tmpl = engine.loadSource(compiled);
 
-## Get Started
+    engine.render(tmpl, { title: "My Title" }, function(err, out) {
+        console.log(out);
+    });
 
-* Read [dustjs.com](http://www.dustjs.com/) for guides, tutorials, and documentation.
-* Check out the `examples/` directory in the repo for simple examples to help you get started using Dust in a variety of ways.
+Global configuration may still be added to the global dust object, and that configuration will be copied into any subsequently instantiated engine objects.
 
-## Contribute
-
-* The team provides support on [Stack Overflow](https://stackoverflow.com/questions/tagged/dust.js), so that's the best place to ask questions.
-* Bug or feature? We welcome issues and pull requests! If you'd like to submit a PR, check out the guide to [contributing](https://github.com/linkedin/dustjs/wiki/Contributing). PRs should include unit tests.
+See the standard dustjs docs for more info on "normal" dust syntax [dustjs.com](http://www.dustjs.com/)
