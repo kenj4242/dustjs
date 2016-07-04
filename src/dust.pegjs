@@ -91,7 +91,7 @@ bodies "bodies"
    reference is defined as matching a opening brace followed by an identifier plus one or more filters and a closing brace
 ---------------------------------------------------------------------------------------------------------------------------------------*/
 reference "reference"
-  = ld n:identifier f:filters rd
+  = ld ws* n:identifier ws* f:filters ws* rd
   { return withPosition(["reference", n, f]) }
 
 /*-------------------------------------------------------------------------------------------------------------------------------------
@@ -106,10 +106,17 @@ partial "partial"
   }
 
 /*-------------------------------------------------------------------------------------------------------------------------------------
+   filterargs is defined as matching a colon : character followed by anything that matches a number or identifier or inline
+---------------------------------------------------------------------------------------------------------------------------------------*/
+filterargs "filterargs"
+  = a:(":" ws* g:(number / identifier / inline) ws* {return g})*
+  { return ["filterargs"].concat(a) }
+
+/*-------------------------------------------------------------------------------------------------------------------------------------
    filters is defined as matching a pipe character followed by anything that matches the key
 ---------------------------------------------------------------------------------------------------------------------------------------*/
 filters "filters"
-  = f:("|" n:key {return n})*
+  = f:("|" ws* n:key ws* a:filterargs ws* { return {name:n, args:a} })*
   { return ["filters"].concat(f) }
 
 /*-------------------------------------------------------------------------------------------------------------------------------------
@@ -217,10 +224,10 @@ esc
   = '\\"' { return '"' }
 
 raw "raw"
-  = "{`" rawText:(!"`}" character:. {return character})* "`}"
+  = ld "`" rawText:(!"`}" character:. {return character})* "`" rd
   { return withPosition(["raw", rawText.join('')]) }
 comment "comment"
-  = "{!" c:(!"!}" c:. {return c})* "!}"
+  = ld "!" c:(!("!" rd) c:. {return c})* "!" rd
   { return withPosition(["comment", c.join('')]) }
 
 /*-------------------------------------------------------------------------------------------------------------------------------------
@@ -232,10 +239,10 @@ tag
   / reference
 
 ld
-  = "{"
+  = "{{"
 
 rd
-  = "}"
+  = "}}"
 
 lb
   = "["

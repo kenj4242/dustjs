@@ -40,6 +40,25 @@ module.exports = function(grunt) {
         banner: '<%= banner %>',
         stripBanners: true
       },
+      lib: {
+	      options: {
+	        banner: '',
+    	    stripBanners: false
+      	},
+        src: [
+					'libsrc/wrapper-head.tpl', 
+					'libsrc/dust.js',
+					'libsrc/renderer.js',
+					'libsrc/context.js',
+					'libsrc/chunk.js',
+					'libsrc/stack.js',
+					'libsrc/stub.js',
+					'libsrc/tap.js',
+					'libsrc/stream.js',
+					'libsrc/wrapper-foot.tpl'
+				],
+        dest: 'lib/dust.js'
+      },
       core: {
         src: ['lib/dust.js', 'src/amd-core.js'],
         dest: 'tmp/dust-core.js'
@@ -281,7 +300,7 @@ module.exports = function(grunt) {
   //--------------------------------------------------
   //------------Grunt task aliases -------------------
   //--------------------------------------------------
-  grunt.registerTask('buildLib',       ['jshint:libs', 'concat']);
+  grunt.registerTask('buildLib',       ['concat:lib', 'jshint:libs', 'concat:core', 'concat:full']);
   grunt.registerTask('build',          ['clean:build', 'peg', 'buildLib', 'uglify']);
 
   //test tasks
