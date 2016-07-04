@@ -6,6 +6,13 @@
   }
 }(this, function(dust) {
 
+	var ld = "{{";
+	var rd = "}}";
+
+	function subDelimiters(str) {
+		return str.replace(/\{/g, ld).replace(/\}/g, rd);
+	}
+
   function extend(target, donor) {
     donor = donor || {};
     for(var prop in donor) {
@@ -15,6 +22,8 @@
   }
 
   function renderIt(message, source, context, expected, config) {
+		source = subDelimiters(source);
+		expected = subDelimiters(expected);
     var tmpl = dust.loadSource(dust.compile(source));
     dust.config = extend({ whitespace: false, amd: false, cjs: false, cache: true }, config);
     it(message, function(done) {
@@ -55,7 +64,7 @@
       var context = {
         templateName: templateName
       };
-      var tmpl = dust.loadSource(dust.compile("template name is {templateName}", "templateNameTest"));
+      var tmpl = dust.loadSource(dust.compile("template name is "+ld+"templateName"+rd+"", "templateNameTest"));
       it("sets the template name on context",
         render(tmpl, context, "template name is templateNameTest"));
       it("sets the template name when provided a context",
@@ -84,7 +93,7 @@
     });
     it("calls callback with source", function(done) {
       dust.onLoad = function(name, cb) {
-        cb(null, 'Loaded: ' + name + ', template name {templateName}');
+        cb(null, 'Loaded: ' + name + ", template name "+ld+"templateName"+rd+"");
       };
       render("onLoad", {
         templateName: templateName
@@ -92,7 +101,7 @@
     });
     it("calls callback with compiled template", function(done) {
       dust.onLoad = function(name, cb) {
-        var tmpl = dust.loadSource(dust.compile('Loaded: ' + name + ', template name {templateName}', 'foobar'));
+        var tmpl = dust.loadSource(dust.compile('Loaded: ' + name + ', template name '+ld+'templateName'+rd+'', 'foobar'));
         cb(null, tmpl);
       };
       render("onLoad", {
@@ -101,7 +110,7 @@
     });
     it("calls callback with compiled template and can override template name", function(done) {
       dust.onLoad = function(name, cb) {
-        var tmpl = dust.loadSource(dust.compile('Loaded: ' + name + ', template name {templateName}', 'foobar'));
+        var tmpl = dust.loadSource(dust.compile('Loaded: ' + name + ', template name '+ld+'templateName'+rd+'', 'foobar'));
         tmpl.templateName = 'override';
         cb(null, dust.cache.foobar);
       };
@@ -150,7 +159,7 @@
   });
 
   describe('renderSource', function() {
-    var template = "Hello {world}!",
+    var template = "Hello "+ld+"world"+rd+"!",
         expected = "Hello world!",
         ctx = {world: "world"};
 
@@ -208,7 +217,7 @@
         expected = 'Hello World',
         tmpl;
     beforeAll(function() {
-      tmpl = dust.compileFn('Hello {world}');
+      tmpl = dust.compileFn('Hello '+ld+'world'+rd+'');
     });
     it('can be invoked as a function', function(done) {
       tmpl(ctx, function(err, out) {

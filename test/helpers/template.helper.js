@@ -28,4 +28,9 @@
     var wooLevel = parseInt(context.get('woo')) + 1;
     return string.toUpperCase() + new Array(wooLevel).join('!');
   };
+  dust.filters.wooargs = function(string, context, args) {
+		var woochar = args[1] || '!';
+    var wooLevel = parseInt(args[0]) + 1;
+    return string.toUpperCase() + new Array(wooLevel).join(woochar);
+  };
 }));

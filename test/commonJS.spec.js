@@ -1,12 +1,15 @@
 var dust = require('../');
 
+var ld = "{{";
+var rd = "}}";
+
 function load(tmpl, name) {
   /*jshint evil:true*/
   return eval(dust.compile(tmpl, name))(dust);
 }
 
 describe('CommonJS template', function() {
-  var template = "Hello {world}!",
+  var template = "Hello "+ld+"world"+rd+"!",
       context = { world: "world" },
       rendered = "Hello world!",
       tmpl;
@@ -64,7 +67,7 @@ describe('CommonJS template', function() {
   });
 
   it('can be passed to dust.render even if it is anonymous', function() {
-    tmpl = load("Hello anonymous {world}!");
+    tmpl = load("Hello anonymous "+ld+"world"+rd+"!");
     dust.render(tmpl, context, function(err, out) {
       expect(out).toEqual("Hello anonymous world!");
     });

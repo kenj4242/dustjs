@@ -57,6 +57,32 @@ function DreamStream(arr) {
   };
 }
 
+
+var ld = "{{";
+var rd = "}}";
+
+
+return subDelimiters( getRawTests(), ld, rd );
+
+
+function subDelimiters(tests, ld, rd) {
+	var i, x, set, test;
+
+	for(i = 0; i < tests.length; i++) {
+		set = tests[i];
+
+		for(x = 0; x < set.tests.length; x++) {
+			test = set.tests[x];
+			tests[i].tests[x].source = test.source.replace(/\{/g, ld).replace(/\}/g, rd);
+		}
+	}
+
+	return tests;
+}
+
+
+function getRawTests() {
+
 return [
 /**
  * CORE TESTS
@@ -1315,6 +1341,27 @@ return [
         context:  { woo: 0, name: "Boo", dust: { woo: 5, name: "Dust" } },
         expected: "DUST!!!!!",
         message:  "filters are passed the current context"
+      },
+      {
+        name:     "filter arguments - literals",
+        source:   "{name | wooargs : 5}",
+        context:  { name: "Dust" },
+        expected: "DUST!!!!!",
+        message:  "filters received arguments passed as literals"
+      },
+      {
+        name:     "filter arguments - passed from context",
+        source:   "{name | wooargs : count}",
+        context:  { name: "Dust", count: 5 },
+        expected: "DUST!!!!!",
+        message:  "filters received arguments passed from the context"
+      },
+      {
+        name:     "filter with multiple arguments",
+        source:   "{name | wooargs : count : \"#\"}",
+        context:  { name: "Dust", count: 5 },
+        expected: "DUST#####",
+        message:  "filters received multiple arguments"
       }
     ]
   },
@@ -1559,9 +1606,9 @@ return [
                       return chunk.write(context.getTemplateName());
                     },
                     "parentTemplate": "parent",
-                    "parentSource": "{?undefinedVar}{:else}{>\"content\"/}{/undefinedVar}",
+                    "parentSource": ld+"?undefinedVar"+rd+""+ld+":else"+rd+""+ld+">\"content\"/"+rd+""+ld+"/undefinedVar"+rd+"",
                     "contentTemplate": "content",
-                    "contentSource": "templateName: {#printTemplateName}{/printTemplateName} output: additional output"
+                    "contentSource": "templateName: "+ld+"#printTemplateName"+rd+""+ld+"/printTemplateName"+rd+" output: additional output"
 
                   },
         expected: "templateName: content output: additional output | additional parent output",
@@ -1587,7 +1634,7 @@ return [
         ].join('\n'),
         context: {
           loadPartialTl: function(chunk) {
-            dust.loadSource(dust.compile('{.value}{.value.childValue.anotherChild}{name.nested}{$idx} ', 'partialTl'));
+            dust.loadSource(dust.compile(""+ld+".value"+rd+""+ld+".value.childValue.anotherChild"+rd+""+ld+"name.nested"+rd+""+ld+"$idx"+rd+" ", 'partialTl'));
             return chunk;
           }
         },
@@ -2102,7 +2149,7 @@ return [
         name: "buffer ",
         source: "{&partial/}",
         context: {},
-        expected: "{&partial/}",
+        expected: ""+ld+"&partial/"+rd+"",
         message: "given content should be parsed as buffer"
       }
     ]
@@ -2229,7 +2276,7 @@ return [
         source: ["{`<pre>",
                  'A: "hello"',
                  "              B: 'hello'?",
-                 "A: a walrus (:{=",
+                 "A: a walrus (:=",
                  "              B: Lols!",
 "               __ ___                              ",
 "            .'. -- . '.                            ",
@@ -2248,7 +2295,7 @@ return [
         expected: ["<pre>",
                  'A: "hello"',
                  "              B: 'hello'?",
-                 "A: a walrus (:{=",
+                 "A: a walrus (:=",
                  "              B: Lols!",
 "               __ ___                              ",
 "            .'. -- . '.                            ",
@@ -2273,7 +2320,7 @@ return [
                  "{~n}   Starting with newline make it not so bad",
                  "{`<pre>",
                  "but",
-                 "  what{",
+                 "  what",
                  "  \twe",
                  "      want is this",
                  "helpful for:",
@@ -2287,22 +2334,22 @@ return [
         expected: ["buffer text!spaces and new lines are nullified (by default). Booo",
                  "   Starting with newline make it not so bad<pre>",
                  "but",
-                 "  what{",
+                 "  what",
                  "  \twe",
                  "      want is this",
                  "helpful for:",
-                 " * talking about Dust syntax which looks like `{ref}` `{@helpers}`",
+                 " * talking about Dust syntax which looks like `"+ld+"ref"+rd+"` `"+ld+"@helpers"+rd+"`",
                  " * interpolations like 'My name is: Paul Walrus",
                  "</pre>after!newline"].join('\n'),
         message: "raw text is not matching"
       },
       {
-        name: "using raw to allow {",
+        name: "using raw to allow "+ld+"",
         source: ["<div data-fancy-json={`\"{rawJsonKey: 'value'}\"`}>",
                  "</div>"].join('\n'),
         context: {},
-        expected: "<div data-fancy-json=\"{rawJsonKey: 'value'}\"></div>",
-        message: "raw text should allow {"
+        expected: "<div data-fancy-json=\""+ld+"rawJsonKey: 'value'"+rd+"\"></div>",
+        message: "raw text should allow "+ld+""
       }
     ]
   },
@@ -2450,4 +2497,7 @@ return [
     ]
   }
 ];
+
+}
+
 }));
