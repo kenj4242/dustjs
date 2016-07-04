@@ -5,6 +5,9 @@
     factory(root.dust, root.ayepromise);
   }
 }(this, function(dust, ayepromise) {
+
+	dust.helpers = dust.helpers || {};
+
   dust.helpers.error = function(chunk, context, bodies, params) {
     throw params.errorMessage;
   };

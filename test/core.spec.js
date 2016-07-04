@@ -21,19 +21,19 @@
     return target;
   }
 
-  function renderIt(message, source, context, expected, config) {
+  function renderIt(dustr, message, source, context, expected, config) {
 		source = subDelimiters(source);
 		expected = subDelimiters(expected);
-    var tmpl = dust.loadSource(dust.compile(source));
-    dust.config = extend({ whitespace: false, amd: false, cjs: false, cache: true }, config);
+    var tmpl = dustr.loadSource(dustr.compile(source));
+    dustr.config = extend({ whitespace: false, amd: false, cjs: false, cache: true }, config);
     it(message, function(done) {
-      render(tmpl, context, expected)(done);
+      render(dustr, tmpl, context, expected)(done);
     });
   }
 
-  function render(tmpl, context, expected) {
+  function render(dustr, tmpl, context, expected) {
     return function(done) {
-      dust.render(tmpl, context, function(err, output) {
+      dustr.render(tmpl, context, function(err, output) {
         expect(err).toBe(null);
         expect(output).toEqual(expected);
         done();
@@ -47,35 +47,38 @@
 
   describe('Context', function() {
     describe("render", function() {
-      var base = dust.makeBase({
+			var dustr = dust.renderer();
+      var base = dustr.makeBase({
         sayHello: function() { return "Hello!"; },
         names: ["Alice", "Bob", "Dusty"]
       });
       it("doesn't push onto the stack if data is undefined", function() {
         expect(base.push().push().push().push().stack).toBe(undefined);
       });
-      renderIt("can read from both globals and context", "{sayHello} {foo}", base.push({foo: "bar"}), "Hello! bar");
-      renderIt("doesn't error if globals are empty", "{sayHello} {foo}", dust.makeBase().push({foo: "bar"}), " bar");
-      renderIt("doesn't error if context is undefined", "{sayHello} {foo}", undefined, " ");
-      renderIt("can iterate over an array in the globals", "{sayHello} {#names}{.} {/names}", base, "Hello! Alice Bob Dusty ");
+      renderIt(dustr, "can read from both globals and context", "{sayHello} {foo}", base.push({foo: "bar"}), "Hello! bar");
+      renderIt(dustr, "doesn't error if globals are empty", "{sayHello} {foo}", dustr.makeBase().push({foo: "bar"}), " bar");
+      renderIt(dustr, "doesn't error if context is undefined", "{sayHello} {foo}", undefined, " ");
+      renderIt(dustr, "can iterate over an array in the globals", "{sayHello} {#names}{.} {/names}", base, "Hello! Alice Bob Dusty ");
     });
 
     describe('templateName', function() {
       var context = {
         templateName: templateName
       };
-      var tmpl = dust.loadSource(dust.compile("template name is "+ld+"templateName"+rd+"", "templateNameTest"));
+			var dustr = dust.renderer();
+      var tmpl = dustr.loadSource(dustr.compile("template name is "+ld+"templateName"+rd+"", "templateNameTest"));
       it("sets the template name on context",
-        render(tmpl, context, "template name is templateNameTest"));
+        render(dustr, tmpl, context, "template name is templateNameTest"));
       it("sets the template name when provided a context",
-        render(tmpl, dust.context(context), "template name is templateNameTest"));
+        render(dustr, tmpl, dustr.context(context), "template name is templateNameTest"));
     });
 
     describe('options', function() {
       it('sets options using makeBase / context', function() {
         var opts = { lang: "fr" },
             globals = { hello: "world" };
-        var base = dust.context(globals, opts);
+				var dustr = dust.renderer();
+        var base = dustr.context(globals, opts);
         expect(base.options.lang).toEqual(opts.lang);
         base = base.rebase();
         expect(base.options.lang).toEqual(opts.lang);
@@ -84,87 +87,93 @@
   });
 
   it("valid keys", function() {
-    renderIt("Renders all valid keys", "{_foo}{$bar}{baz1}", {_foo: 1, $bar: 2, baz1: 3}, "123");
+		var dustr = dust.renderer();
+    renderIt(dustr, "Renders all valid keys", "{_foo}{$bar}{baz1}", {_foo: 1, $bar: 2, baz1: 3}, "123");
   });
 
   describe('dust.onLoad', function() {
+
+		var dustr = dust.renderer();
+
     beforeEach(function() {
-      dust.cache.onLoad = null;
+      dustr.cache.onLoad = null;
     });
     it("calls callback with source", function(done) {
-      dust.onLoad = function(name, cb) {
+      dustr.onLoad = function(name, cb) {
         cb(null, 'Loaded: ' + name + ", template name "+ld+"templateName"+rd+"");
       };
-      render("onLoad", {
+      render(dustr, "onLoad", {
         templateName: templateName
       }, "Loaded: onLoad, template name onLoad")(done);
     });
     it("calls callback with compiled template", function(done) {
-      dust.onLoad = function(name, cb) {
-        var tmpl = dust.loadSource(dust.compile('Loaded: ' + name + ', template name '+ld+'templateName'+rd+'', 'foobar'));
+      dustr.onLoad = function(name, cb) {
+        var tmpl = dustr.loadSource(dustr.compile('Loaded: ' + name + ', template name '+ld+'templateName'+rd+'', 'foobar'));
         cb(null, tmpl);
       };
-      render("onLoad", {
+      render(dustr, "onLoad", {
         templateName: templateName
       }, "Loaded: onLoad, template name foobar")(done);
     });
     it("calls callback with compiled template and can override template name", function(done) {
-      dust.onLoad = function(name, cb) {
-        var tmpl = dust.loadSource(dust.compile('Loaded: ' + name + ', template name '+ld+'templateName'+rd+'', 'foobar'));
+      dustr.onLoad = function(name, cb) {
+        var tmpl = dustr.loadSource(dustr.compile('Loaded: ' + name + ', template name '+ld+'templateName'+rd+'', 'foobar'));
         tmpl.templateName = 'override';
-        cb(null, dust.cache.foobar);
+        cb(null, dustr.cache.foobar);
       };
-      render("onLoad", {
+      render(dustr, "onLoad", {
         templateName: templateName
       }, "Loaded: onLoad, template name override")(done);
     });
     it("receives context options", function(done) {
-      dust.onLoad = function(name, opts, cb) {
+      dustr.onLoad = function(name, opts, cb) {
         cb(null, 'Loaded: ' + name + ', lang ' + opts.lang);
       };
-      render("onLoad", dust.makeBase(null, { lang: "fr" }), "Loaded: onLoad, lang fr")(done);
+      render(dustr, "onLoad", dustr.makeBase(null, { lang: "fr" }), "Loaded: onLoad, lang fr")(done);
     });
   });
 
   describe('dust.config.cache', function() {
+		var dustr = dust.renderer();
     beforeAll(function() {
-      dust.config.cache = false;
+      dustr.config.cache = false;
     });
     afterAll(function() {
-      dust.config.cache = true;
+      dustr.config.cache = true;
     });
     it('turns off cache registration', function() {
-      dust.loadSource(dust.compile('Not cached', 'test'));
-      expect(dust.cache.test).toBe(undefined);
+      dustr.loadSource(dustr.compile('Not cached', 'test'));
+      expect(dustr.cache.test).toBe(undefined);
     });
     it('calls onLoad every time for a template', function(done) {
       var tmpl = "Version 1";
-      dust.onLoad = function(name, cb) {
+      dustr.onLoad = function(name, cb) {
         cb(null, tmpl);
       };
-      dust.render('test', undefined, function(err, out) {
+      dustr.render('test', undefined, function(err, out) {
         expect(out).toEqual(tmpl);
         tmpl = "Version 2";
-        dust.render('test', undefined, function(err, out) {
+        dustr.render('test', undefined, function(err, out) {
           expect(out).toEqual(tmpl);
           done();
         });
       });
     });
     it('does not clobber a cached template', function() {
-      dust.cache.test = 'test';
-      dust.loadSource(dust.compile('Not cached', 'test'));
-      expect(dust.cache.test).toEqual('test');
+      dustr.cache.test = 'test';
+      dustr.loadSource(dustr.compile('Not cached', 'test'));
+      expect(dustr.cache.test).toEqual('test');
     });
   });
 
   describe('renderSource', function() {
+		var dustr = dust.renderer();
     var template = "Hello "+ld+"world"+rd+"!",
         expected = "Hello world!",
         ctx = {world: "world"};
 
     it('invokes a callback', function(done) {
-      dust.renderSource(template, ctx, function(err, out) {
+      dustr.renderSource(template, ctx, function(err, out) {
         expect(err).toBe(null);
         expect(out).toBe(expected);
         done();
@@ -172,7 +181,7 @@
     });
 
     it('streams', function(done) {
-      dust.renderSource(template, ctx).on('data', function(out) {
+      dustr.renderSource(template, ctx).on('data', function(out) {
         expect(out).toBe(expected);
         done();
       });
@@ -180,7 +189,7 @@
 
     it('streams to every listener', function(done) {
       var recipients = 0;
-      var stream = dust.renderSource(template, ctx);
+      var stream = dustr.renderSource(template, ctx);
       var func = function(out) {
         expect(out).toBe(expected);
         recipients--;
@@ -199,7 +208,7 @@
 
     it('pipes', function(done) {
       var gotData = false;
-      dust.renderSource(template, ctx).pipe({
+      dustr.renderSource(template, ctx).pipe({
         write: function(out) {
           expect(out).toBe(expected);
           gotData = true;
@@ -213,11 +222,12 @@
   });
 
   describe('compileFn', function() {
+		var dustr = dust.renderer();
     var ctx = {world:"World"},
         expected = 'Hello World',
         tmpl;
     beforeAll(function() {
-      tmpl = dust.compileFn('Hello '+ld+'world'+rd+'');
+      tmpl = dustr.compileFn('Hello '+ld+'world'+rd+'');
     });
     it('can be invoked as a function', function(done) {
       tmpl(ctx, function(err, out) {

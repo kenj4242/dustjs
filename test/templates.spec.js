@@ -9,6 +9,7 @@ var isRhino = typeof isRhino !== 'undefined';
     factory(root.dust, root.coreTests);
   }
 }(this, function(dust, tests) {
+
   /*jshint loopfunc:true*/
   var testers = {
     Render: render,
@@ -32,13 +33,19 @@ var isRhino = typeof isRhino !== 'undefined';
   for(t in testers) {
     if(isRhino && t !== 'Render') { continue; }
     describe(t, function() {
+
+			// use the same renderer throughout
+			var dustr = dust.renderer();
+			extend(dustr.filters, dust.filters);
+			extend(dustr.helpers, dust.helpers);
+
       for(i = 0; i < tests.length; i++) {
         suite = tests[i];
         describe(suite.name, function() {
           for(j = 0; j < suite.tests.length; j++) {
             test = suite.tests[j];
             if (!isRhino || !test.disabled_in_rhino) {
-              it(test.message, testers[t](test, dust));
+              it(test.message, testers[t](test, dust, dustr));
             }
           }
         });
@@ -48,12 +55,13 @@ var isRhino = typeof isRhino !== 'undefined';
 
 }));
 
-function prepare(test, dust) {
-  dust.config = extend({ whitespace: false, amd: false, cache: true }, test.config);
-  dust.loadSource(dust.compile(test.source, test.name));
+function prepare(test, dust, dustr) {
+  dustr.config = extend({ whitespace: false, amd: false, cache: true }, test.config);
+
+  dustr.loadSource(dustr.compile(test.source, test.name));
   var context = test.context;
   if (test.base) {
-     context = dust.makeBase(test.base).push(context);
+     context = dustr.makeBase(test.base).push(context);
   }
   return context;
 }
@@ -78,7 +86,7 @@ function extend(target, donor) {
   return target;
 }
 
-function render(test, dust) {
+function render(test, dust, dustr) {
   function checkRender(done) {
     return function(err, output) {
       if (test.error) {
@@ -102,15 +110,15 @@ function render(test, dust) {
   return function(done) {
     var check = checkRender(done);
     try {
-      var ctx = prepare(test, dust);
-      dust.render(test.name, ctx, check);
+      var ctx = prepare(test, dust, dustr);
+      dustr.render(test.name, ctx, check);
     } catch(err) {
       check(err);
     }
   };
 }
 
-function stream(test, dust) {
+function stream(test, dust, dustr) {
   function checkStream(done) {
     return function(test, result) {
       if (test.error) {
@@ -136,8 +144,9 @@ function stream(test, dust) {
     var ctx;
 
     try {
-      ctx = prepare(test, dust);
-      dust.stream(test.name, ctx)
+      var ctx = prepare(test, dust, dustr);
+
+      dustr.stream(test.name, ctx)
       .on('data', function(data) { result.output += data; })
       .on('end', function() { check(test, result); })
       .on('error', function(err) { result.error = err.message || err; });
@@ -179,7 +188,7 @@ function WritableStream(cb) {
   };
 }
 
-function pipe(test, dust) {
+function pipe(test, dust, dustr) {
   var calls = 0;
 
   function checkPipe(test, done) {
@@ -206,8 +215,9 @@ function pipe(test, dust) {
 
   return function(done) {
     try {
-      var ctx = prepare(test, dust);
-      dust.stream(test.name, ctx)
+      var ctx = prepare(test, dust, dustr);
+
+      dustr.stream(test.name, ctx)
           .pipe(new WritableStream(checkPipe(test, done)))
           .pipe(new WritableStream(checkPipe(test, done)));
     } catch(err) {

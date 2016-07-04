@@ -155,7 +155,7 @@ return [
          context:  { "helper": function(chunk, context, bodies, params)
                     {
                       var newContext = {};
-                      return bodies.block(chunk, dust.makeBase(newContext));
+                      return bodies.block(chunk, chunk.renderer.makeBase(newContext));
                     }
                    },
         expected: "",
@@ -399,7 +399,7 @@ return [
         name: "context push / pop",
         source: "{#helper}{greeting} {firstName} {lastName}{.}{/helper}",
         context: {"helper": function(chunk, context, bodies) {
-          var ctx = dust.makeBase({ greeting: "Hello" })
+          var ctx = chunk.renderer.makeBase({ greeting: "Hello" })
                         .push({ firstName: "Dusty" })
                         .push({ lastName: "Dusterson" })
                         .push("!")
@@ -414,7 +414,7 @@ return [
         name: "context clone",
         source: "{#helper}{greeting} {firstName} {lastName}{/helper}",
         context: {"helper": function(chunk, context, bodies) {
-          var ctx = dust.makeBase({ greeting: "Hello" })
+          var ctx = chunk.renderer.makeBase({ greeting: "Hello" })
                         .push({ firstName: "Dusty" })
                         .push({ lastName: "Dusterson" })
                         .clone();
@@ -1596,9 +1596,10 @@ return [
                    '{>"{parentTemplate}"/} | additional parent output'].join("\n"),
         context:  { "loadTemplate": function(chunk, context, bodies, params)
                     {
+											var dustr = chunk.renderer;
                       var source = context.resolve(params.source),
                           name = context.resolve(params.name);
-                      dust.loadSource(dust.compile(source, name));
+                      dustr.loadSource(dustr.compile(source, name));
                       return chunk.write('');
                     },
                     "printTemplateName": function(chunk, context, bodies, params)
@@ -1619,7 +1620,7 @@ return [
         source:   '{#helper template="partial"}{/helper}',
         context:  { "helper": function(chunk, context, bodies, params)
                     {
-                      var newContext = dust.makeBase({});
+                      var newContext = chunk.renderer.makeBase({});
                       return chunk.partial(params.template, newContext, newContext, {});
                     }
                   },
@@ -1634,7 +1635,7 @@ return [
         ].join('\n'),
         context: {
           loadPartialTl: function(chunk) {
-            dust.loadSource(dust.compile(""+ld+".value"+rd+""+ld+".value.childValue.anotherChild"+rd+""+ld+"name.nested"+rd+""+ld+"$idx"+rd+" ", 'partialTl'));
+            chunk.renderer.loadSource(chunk.renderer.compile(""+ld+".value"+rd+""+ld+".value.childValue.anotherChild"+rd+""+ld+"name.nested"+rd+""+ld+"$idx"+rd+" ", 'partialTl'));
             return chunk;
           }
         },
